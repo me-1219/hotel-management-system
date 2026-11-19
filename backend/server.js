@@ -6,8 +6,9 @@ const pool = require('./db');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
-
-app.use(cors());
+const helmet = require('helmet');
+app.use(helmet());
+app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
