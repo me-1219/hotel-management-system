@@ -90,3 +90,28 @@ INSERT INTO menu_items (category_id, name, description, price) VALUES
   (2, 'Tibs', 'Sauteed beef with onions and peppers', 400),
   (3, 'Macchiato', 'Ethiopian coffee with milk', 60),
   (3, 'Fresh Juice', 'Avocado, mango or papaya', 120);
+
+
+//guest orders, where a guest picks items from the menu with a room number,
+ALTER TABLE rooms
+  ADD COLUMN IF NOT EXISTS qr_token UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE;
+
+CREATE TABLE IF NOT EXISTS orders (
+  id SERIAL PRIMARY KEY,
+  booking_id INT NOT NULL REFERENCES bookings(id),
+  room_id INT NOT NULL REFERENCES rooms(id),
+  status VARCHAR(20) NOT NULL DEFAULT 'new'
+    CHECK (status IN ('new', 'preparing', 'ready', 'delivered', 'cancelled')),
+  notes TEXT,
+  total NUMERIC(10, 2) NOT NULL CHECK (total >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id SERIAL PRIMARY KEY,
+  order_id INT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  menu_item_id INT NOT NULL REFERENCES menu_items(id),
+  name VARCHAR(100) NOT NULL,
+  unit_price NUMERIC(10, 2) NOT NULL,
+  quantity INT NOT NULL CHECK (quantity > 0)
+);

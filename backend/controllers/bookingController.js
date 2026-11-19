@@ -152,7 +152,15 @@ const transition = ({ allowedFrom, newStatus, roomMustBe, newRoomStatus, mustBeP
         throw httpError(400, `Room is ${roomResult.rows[0].status}, it must be ${roomMustBe.join(' or ')}`);
       }
     }
-        if (mustBePaid) {
+    if (mustBePaid) {
+      const openOrders = await client.query(
+        `SELECT COUNT(*)::int AS count FROM orders
+         WHERE booking_id = $1 AND status IN ('new', 'preparing', 'ready')`,
+        [booking.id]
+      );
+      if (openOrders.rows[0].count > 0) {
+        throw httpError(400, 'There are restaurant orders not delivered yet');
+      }
       const balanceResult = await client.query(
         `SELECT b.total_price
                 + COALESCE((SELECT SUM(amount) FROM charges WHERE booking_id = b.id), 0)
