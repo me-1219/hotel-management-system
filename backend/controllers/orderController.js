@@ -176,3 +176,37 @@ exports.updateOrderStatus = async (req, res) => {
     client.release();
   }
 };
+
+// public: guest checks their orders from the QR code
+exports.getRoomOrders = async (req, res) => {
+  const { token } = req.params;
+
+  if (!UUID_REGEX.test(token)) {
+    return res.status(400).json({ message: 'Invalid room code' });
+  }
+
+  try {
+    const roomResult = await pool.query('SELECT id FROM rooms WHERE qr_token = $1', [token]);
+    const room = roomResult.rows[0];
+    if (!room) return res.status(404).json({ message: 'Room code not found' });
+
+    const result = await pool.query(
+      `SELECT o.id, o.status, o.notes, o.total, o.created_at,
+              json_agg(
+                json_build_object('name', oi.name, 'quantity', oi.quantity, 'unit_price', oi.unit_price)
+                ORDER BY oi.id
+              ) AS items
+       FROM orders o
+       JOIN bookings b ON b.id = o.booking_id
+       JOIN order_items oi ON oi.order_id = o.id
+       WHERE o.room_id = $1 AND b.status = 'checked_in'
+       GROUP BY o.id
+       ORDER BY o.created_at DESC`,
+      [room.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to load orders' });
+  }
+};
