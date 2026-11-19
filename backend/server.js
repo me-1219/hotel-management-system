@@ -31,6 +31,8 @@ app.use('/api/guests', require('./routes/guests'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/menu', require('./routes/menu'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/users', require('./routes/users'));
 
 // must be last
 app.use(notFound);
